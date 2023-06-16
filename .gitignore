@@ -163,3 +163,4 @@ submission_*.csv
 *.model
 tb_logs
 data
+submissions/
