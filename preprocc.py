@@ -1,56 +1,63 @@
-from natasha import (
-    Segmenter,
-    MorphVocab,
-    
-    NewsEmbedding,
-    NewsMorphTagger,
-    NewsSyntaxParser,
-    NewsNERTagger,
-    
-    PER,
-    NamesExtractor,
-
-    Doc
-)
-
-segmenter = Segmenter()
-morph_vocab = MorphVocab()
-emb = NewsEmbedding()
-morph_tagger = NewsMorphTagger(emb)
-syntax_parser = NewsSyntaxParser(emb)
-
-names_extractor = NamesExtractor(morph_vocab)
-
-def lemmatize(words):
-    text = ' '.join(words)
-    
-    doc = Doc(text)
-    doc.segment(segmenter)
-    doc.tag_morph(morph_tagger)
-    for token in doc.tokens:
-        token.lemmatize(morph_vocab)
-    
-    words = []
-    for token in doc.tokens:
-        words.append(token.lemma)
-    return words
-
 import re
 
-from cyrtranslit import to_cyrillic
+from cyrtranslit import to_cyrillic, to_latin
+lat_to_cyr = str.maketrans("aekmhopctyx", "аекмнорстух")
+cyr_to_lat = str.maketrans("аекмнорстух", "aekmhopctyx")
+stop_words = set(['г', 'кг', 'шт', 'мл', 'л', 'литр', 'мг', 'гр', 'км', 'мм', 'mm', 'уп'])
+
+def replace_camel_case(s):
+    matches = len(re.findall(r'(?<=[a-zа-я])([A-ZА-Я])', s))
+    if matches > 2:
+        return re.sub(r'(?<=[a-zа-я])([A-ZА-Я])', r' \1', s)
+    else:
+        return s
+    
+def split_on_language_change(s):
+    s = re.sub(r'(?<=[a-zа-я])(?=[A-ZА-Я0-9])', r' ', s)
+    s = re.sub(r'(?<=[A-ZА-Я0-9])(?=[a-zа-я])', r' ', s)
+    return s
+
+
+def insert_space_after_one(s):
+    return re.sub(r'(1)(?=[A-Za-zА-Яа-я])', r'\1 ', s)
+
+def replace_zero(s):
+    s = re.sub(r'(?<=[A-Za-z])0(?=[A-Za-z])', 'o', s)
+    s = re.sub(r'(?<=[А-Яа-я])0(?=[А-Яа-я])', 'о', s)
+    return s
 
 def preprocess_text(text):
     
-    text = re.sub('\d+', '0', text)  # replace numbers to 0/''
-    text = re.sub(r'(?<=[a-zа-я])([A-ZА-Я])', r' \1', text) # сплитим по заглав. букв
+    text = replace_zero(text)
+    
+    text = re.sub('\d+', '1', text)  # replace numbers to 1
+    text = replace_camel_case(text)
     text = re.sub('д/', 'для ', text)
+    text = insert_space_after_one(text)
     text = re.sub(r'\s+', ' ', text)  # remove extra spaces
     text = re.sub(r'[^\w\s]', ' ', text)  # remove punctuation
     words = []
     for w in text.lower().split():
-        if bool(re.search('[a-z]', w)) and bool(re.search('[а-я]', w)):
-            words.append(to_cyrillic(w))
+        if len(w) < 2:
+            continue
+        
+        num_eng_chars = len(re.findall(r'[a-z]', w))
+        num_ru_chars = len(re.findall(r'[а-я]', w))
+        if num_eng_chars and num_ru_chars:
+            if num_eng_chars > num_ru_chars:
+                w = w.translate(cyr_to_lat)
+            else:
+                w = w.translate(lat_to_cyr)
+        
+        if w in stop_words:
+            continue
+        
+        # если нет транзиторов
+        w = split_on_language_change(w)
+        if ' ' in w:
+            words.extend(w.split())
         else:
             words.append(w)
-#     words = lemmatize(words)
+    if len(words) == 0:
+        return ['']
     return words
