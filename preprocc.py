@@ -33,13 +33,14 @@ def preprocess_text(text):
     text = re.sub('\d+', '1', text)  # replace numbers to 1
     text = replace_camel_case(text)
     text = re.sub('д/', 'для ', text)
+    text = re.sub('Д/', 'для ', text)
     text = insert_space_after_one(text)
     text = re.sub(r'\s+', ' ', text)  # remove extra spaces
     text = re.sub(r'[^\w\s]', ' ', text)  # remove punctuation
     words = []
     for w in text.lower().split():
-        if len(w) < 2:
-            continue
+#         if len(w) < 2:
+#             continue
         
         num_eng_chars = len(re.findall(r'[a-z]', w))
         num_ru_chars = len(re.findall(r'[а-я]', w))
@@ -57,7 +58,26 @@ def preprocess_text(text):
         if ' ' in w:
             words.extend(w.split())
         else:
+            if w == 'нести':
+                w = 'nestea'
+            if w == 'эпика':
+                w = 'epica'
+            if w == 'хелен':
+                w = 'helen'
+            if w == 'харпер':
+                w = 'harper'
+            if w == 'тимотей':
+                w = 'timotei'
+            if w == 'тесс':
+                w = 'tess'
+            if w == 'кроненбург':
+                w = 'kronenbourg'
+            if w == 'пай':
+                w = 'pie'
+            if w == 'чоко':
+                w = 'choko'
+            if w == 'салтон':
+                w = 'salton'
             words.append(w)
-    if len(words) == 0:
-        return ['']
+        
     return words
