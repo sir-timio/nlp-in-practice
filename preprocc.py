@@ -3,7 +3,7 @@ import re
 from cyrtranslit import to_cyrillic, to_latin
 lat_to_cyr = str.maketrans("aekmhopctyx", "аекмнорстух")
 cyr_to_lat = str.maketrans("аекмнорстух", "aekmhopctyx")
-stop_words = set(['г', 'кг', 'шт', 'мл', 'л', 'литр', 'мг', 'гр', 'км', 'мм', 'mm', 'уп'])
+stop_words = set(['г', 'кг', 'шт', 'мл', 'л', 'литр', 'мг', 'гр', 'км', 'мм', 'mm', 'уп', 'скидка', 'цена'])
 
 def replace_camel_case(s):
     matches = len(re.findall(r'(?<=[a-zа-я])([A-ZА-Я])', s))
@@ -12,6 +12,7 @@ def replace_camel_case(s):
     else:
         return s
     
+
 def split_on_language_change(s):
     s = re.sub(r'(?<=[a-zа-я])(?=[A-ZА-Я0-9])', r' ', s)
     s = re.sub(r'(?<=[A-ZА-Я0-9])(?=[a-zа-я])', r' ', s)
@@ -78,6 +79,16 @@ def preprocess_text(text):
                 w = 'choko'
             if w == 'салтон':
                 w = 'salton'
+            if w == 'винстон':
+                w = 'winston'
+            if w == 'липтон':
+                w = 'lipton'
+            if w == 'махеев':
+                w = 'махеевъ'
+            if w == 'яшкинская':
+                w = 'яшкино'
+            if w == 'редбулл':
+                words.append('red')
+                w = 'bull'
             words.append(w)
-        
     return words
